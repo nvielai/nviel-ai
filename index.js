@@ -6,68 +6,47 @@ dotenv.config();
 const app = express();
 app.use(express.json());
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+/* ================= AI SETUP ================= */
+const openai = process.env.OPENAI_API_KEY
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
 
-/* ================= MEMORY (EVOLVING) ================= */
+/* ================= MEMORY ENGINE ================= */
 let memory = {
-  intents: { call: 0, travel: 0, finance: 0, game: 0 },
-  lastIntent: null,
-  lastTime: null
+  call: 0,
+  travel: 0,
+  finance: 0,
+  focus: 0,
+  lastIntent: null
 };
 
-/* ================= CONTEXT ENGINE ================= */
-function getContext() {
-  const hour = new Date().getHours();
-  return {
-    timeOfDay:
-      hour < 6 ? "night" :
-      hour < 12 ? "morning" :
-      hour < 18 ? "afternoon" : "evening",
-    lastIntent: memory.lastIntent
-  };
-}
-
 /* ================= AI CORE ================= */
-async function nveilThink(text) {
-  const context = getContext();
-
-  const prompt = `
-You are NVIEL — a futuristic outcome-based AI operating system.
-
-MEMORY:
-${JSON.stringify(memory)}
-
-CONTEXT:
-${JSON.stringify(context)}
-
-USER INPUT:
-"${text}"
-
-Your job:
-1. Understand intent
-2. Decide whether to act now or delay
-3. Plan outcome (not steps)
-4. Simulate success probability
-
-Return ONLY valid JSON:
-
-{
-  "intent": "call | travel | finance | game | unknown",
-  "confidence": 0.0-1.0,
-  "decision": "execute | delay",
-  "reasoning": "why this decision was made",
-  "outcomePlan": ["short outcome step 1", "step 2"],
-  "successProbability": 0-100,
-  "remember": true | false
-}
-`;
+async function think(text) {
+  if (!openai) {
+    const t = text.toLowerCase();
+    if (t.includes("call")) return { intent: "call", confidence: 0.9 };
+    if (t.includes("travel")) return { intent: "travel", confidence: 0.9 };
+    if (t.includes("pay")) return { intent: "finance", confidence: 0.9 };
+    return { intent: "focus", confidence: 0.8 };
+  }
 
   const r = await openai.chat.completions.create({
     model: "gpt-4.1-mini",
-    messages: [{ role: "user", content: prompt }],
-    temperature: 0.15
+    messages: [{
+      role: "user",
+      content: `
+You are NVIEL, a futuristic outcome-based phone OS.
+
+Memory: ${JSON.stringify(memory)}
+User: "${text}"
+
+Return ONLY JSON:
+{
+  "intent": "call | travel | finance | focus | unknown",
+  "confidence": 0.0-1.0
+}`
+    }],
+    temperature: 0.2
   });
 
   return JSON.parse(r.choices[0].message.content);
@@ -75,121 +54,168 @@ Return ONLY valid JSON:
 
 /* ================= API ================= */
 app.post("/ai", async (req, res) => {
-  try {
-    const ai = await nveilThink(req.body.text);
-
-    if (ai.remember && memory.intents[ai.intent] !== undefined) {
-      memory.intents[ai.intent]++;
-      memory.lastIntent = ai.intent;
-      memory.lastTime = Date.now();
-    }
-
-    res.json({
-      ...ai,
-      memory
-    });
-  } catch (e) {
-    res.json({
-      intent: "unknown",
-      decision: "delay",
-      reasoning: "AI system instability",
-      outcomePlan: [],
-      successProbability: 0
-    });
+  const ai = await think(req.body.text || "");
+  if (memory[ai.intent] !== undefined) {
+    memory[ai.intent]++;
+    memory.lastIntent = ai.intent;
   }
+  res.json({ ...ai, memory });
 });
 
 /* ================= UI ================= */
 app.get("/", (_, res) => {
-  res.send(`
+res.send(`
 <!DOCTYPE html>
 <html>
 <head>
-<title>NVIEL</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NVIEL OS</title>
 <style>
+*{box-sizing:border-box}
 body{
-  margin:0;
-  font-family:system-ui;
-  background:radial-gradient(circle at top,#020617,#000);
-  color:#e5e7eb;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  height:100vh;
-}
-.app{
-  width:390px;
-  background:#0b1020;
-  padding:24px;
-  border-radius:22px;
-  box-shadow:0 40px 120px rgba(0,0,0,.7);
-}
-h2{margin:0}
-p{font-size:14px;color:#9ca3af}
-input,button{
-  width:100%;
-  padding:14px;
-  border-radius:14px;
-  border:none;
-  margin-top:10px;
-  font-size:15px;
-}
-input{background:#020617;color:#e5e7eb}
+margin:0;background:radial-gradient(circle at top,#0f172a,#020617);
+color:#e5e7eb;font-family:system-ui;height:100vh;overflow:hidden}
+.screen{
+position:absolute;inset:0;display:flex;
+flex-direction:column;align-items:center;
+justify-content:center;opacity:0;
+transform:translateY(20px);
+transition:opacity .45s ease,transform .45s ease}
+.screen.show{opacity:1;transform:none}
+.lock{font-size:44px;font-weight:700}
+.home{padding:20px}
+.header{width:100%;text-align:center}
+.grid{
+margin-top:20px;
+display:grid;grid-template-columns:1fr 1fr;
+gap:14px;width:100%}
+.card{
+background:linear-gradient(145deg,#0b1020,#020617);
+padding:22px;border-radius:22px;
+text-align:center;font-size:16px;
+box-shadow:0 25px 60px rgba(0,0,0,.7);
+transition:.25s}
+.card:active{transform:scale(.96)}
+.ai{
+margin-top:20px;width:100%}
+input{
+width:100%;padding:14px;
+border-radius:14px;border:none;
+background:#020617;color:white;font-size:15px}
 button{
-  background:linear-gradient(90deg,#6366f1,#22d3ee);
-  font-weight:700;
-}
-.state{
-  margin-top:14px;
-  font-size:13px;
-  color:#93c5fd;
-  white-space:pre-line;
-}
-small{color:#64748b}
+margin-top:10px;width:100%;
+padding:14px;border-radius:14px;
+border:none;font-weight:700;
+background:linear-gradient(90deg,#6366f1,#22d3ee)}
+.footer{
+margin-top:auto;font-size:12px;color:#94a3b8}
+.outcome{
+font-size:28px;font-weight:700}
+.system{
+padding:20px;font-size:14px}
+pre{
+background:#020617;padding:14px;
+border-radius:14px;width:100%;
+overflow:auto}
 </style>
 </head>
 
 <body>
-<div class="app">
-  <h2>NVIEL</h2>
-  <p>Outcome-based intelligence system</p>
 
-  <input id="q" placeholder="Speak or type intent…" />
-  <button onclick="ask()">Run NVIEL</button>
+<div class="screen lock show" onclick="go('home')">
+  <div id="time"></div>
+  <div style="font-size:14px;color:#94a3b8">Tap to unlock</div>
+</div>
 
-  <div class="state" id="state"></div>
-  <small>Predictive • Silent • Outcome-first</small>
+<div class="screen home">
+  <div class="header">
+    <h2>NVIEL</h2>
+    <div style="font-size:13px;color:#94a3b8">
+      Outcome-based AI OS
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card" onclick="out('call')">📞 Call</div>
+    <div class="card" onclick="out('travel')">✈️ Travel</div>
+    <div class="card" onclick="out('finance')">💸 Finance</div>
+    <div class="card" onclick="out('focus')">🎯 Focus</div>
+  </div>
+
+  <div class="ai">
+    <input id="q" placeholder="Say anything naturally…" />
+    <button onclick="ask()">Ask NVIEL</button>
+    <button onclick="go('system')">⚙️ System</button>
+  </div>
+
+  <div class="footer" id="suggest">
+    NVIEL is learning your patterns…
+  </div>
+</div>
+
+<div class="screen outcome" id="outcome"></div>
+
+<div class="screen system">
+  <h3>System Memory</h3>
+  <pre id="mem"></pre>
+  <button onclick="go('home')">⬅ Back</button>
 </div>
 
 <script>
-async function ask(){
-  const text = document.getElementById("q").value;
-  const s = document.getElementById("state");
-  s.innerText = "NVIEL is thinking…";
+const screens={
+lock:document.querySelector(".lock"),
+home:document.querySelector(".home"),
+system:document.querySelector(".system"),
+outcome:document.getElementById("outcome")
+};
 
-  const r = await fetch("/ai",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({ text })
-  });
-
-  const d = await r.json();
-
-  s.innerText =
-    "Intent: " + d.intent +
-    "\\nDecision: " + d.decision +
-    "\\nReason: " + d.reasoning +
-    "\\nSuccess Probability: " + d.successProbability + "%" +
-    "\\n\\nOutcome Plan:\\n- " + d.outcomePlan.join("\\n- ");
+function go(s){
+Object.values(screens).forEach(e=>e.classList.remove("show"));
+screens[s].classList.add("show");
+if(s==="system")mem();
 }
+
+function out(i){
+screens.outcome.innerHTML=
+"<div>"+i.toUpperCase()+" MODE</div>"+
+"<div style='font-size:14px;color:#94a3b8;margin-top:10px'>"+
+"Optimizing outcome…</div>"+
+"<button onclick=\"go('home')\">Done</button>";
+go("outcome");
+}
+
+async function ask(){
+const q=document.getElementById("q").value;
+const r=await fetch("/ai",{method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({text:q})});
+const d=await r.json();
+document.getElementById("suggest").innerText =
+"Intent: "+d.intent+" • Confidence: "+
+Math.round(d.confidence*100)+"%";
+out(d.intent);
+}
+
+function mem(){
+fetch("/ai",{method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({text:"memory"})})
+.then(r=>r.json()).then(d=>{
+document.getElementById("mem").innerText =
+JSON.stringify(d.memory,null,2);
+});
+}
+
+setInterval(()=>{
+document.getElementById("time").innerText =
+new Date().toLocaleTimeString();
+},1000);
 </script>
+
 </body>
 </html>
 `);
 });
 
 /* ================= START ================= */
-app.listen(3000, () => {
-  console.log("🚀 NVIEL running on http://localhost:3000");
-});
+app.listen(process.env.PORT || 3000);
