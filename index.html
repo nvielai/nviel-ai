@@ -33,15 +33,24 @@ body{
   font-size:12px;
 }
 .icon{
-  height:56px;
-  width:56px;
-  margin:auto;
-  border-radius:16px;
+  width:58px;
+  height:58px;
+  border-radius:18px;
   background:linear-gradient(145deg,#1e293b,#020617);
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size:26px;
+  font-size:24px;
+  margin:auto;
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,0.05),
+    0 10px 25px rgba(0,0,0,0.6);
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+
+.app:active .icon{
+  transform:scale(0.9);
+  box-shadow:0 5px 10px rgba(0,0,0,0.8);
 }
 .ai{
   position:absolute;
