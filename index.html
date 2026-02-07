@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NVIEL</title>
+  <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(circle at top, #0f172a, #020617);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont;
+      color: #e5e7eb;
+    }
+    .card {
+      width: 340px;
+      padding: 28px;
+      border-radius: 22px;
+      background: rgba(15, 23, 42, 0.9);
+      box-shadow: 0 40px 120px rgba(0,0,0,0.6);
+      text-align: center;
+    }
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      letter-spacing: 1px;
+    }
+    p {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #94a3b8;
+    }
+    .outcome {
+      margin-top: 24px;
+      padding: 14px;
+      border-radius: 14px;
+      background: linear-gradient(90deg, #6366f1, #22d3ee);
+      color: #020617;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .outcome:active {
+      transform: scale(0.97);
+    }
+    footer {
+      margin-top: 18px;
+      font-size: 11px;
+      color: #64748b;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h1>NVIEL</h1>
+    <p>Outcome-based intelligence system</p>
+
+    <div class="outcome" onclick="next()">
+      Show me the future
+    </div>
+
+    <footer>
+      Built from vision, not resources
+    </footer>
+  </div>
+
+  <script>
+    function next() {
+      alert("Outcome unlocked 🚀\\nNVIEL is thinking beyond apps.");
+    }
+  </script>
+
+</body>
+</html>
