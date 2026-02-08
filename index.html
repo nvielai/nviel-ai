@@ -126,9 +126,20 @@ text-align:center;
 <body>
 
 <!-- LOCK -->
-<div class="screen lock show" onclick="go('home')">
-  <div class="lock-time" id="time"></div>
-  <div class="lock-sub">Tap to unlock NVIEL</div>
+<div class="screen lock show">
+  <div id="time" style="font-size:44px;font-weight:700"></div>
+
+  <button onclick="unlock()" style="
+    margin-top:20px;
+    padding:14px 24px;
+    border-radius:16px;
+    border:none;
+    font-size:16px;
+    font-weight:700;
+    background:linear-gradient(90deg,#6366f1,#22d3ee);
+  ">
+    Unlock NVIEL
+  </button>
 </div>
 
 <!-- HOME -->
@@ -186,7 +197,9 @@ function go(s){
 Object.values(screens).forEach(x=>x.classList.remove('show'));
 screens[s].classList.add('show');
 }
-
+function unlock(){
+  go("home");
+}
 function out(text){
 screens.outcome.innerHTML=`
 <div>${text}</div>
