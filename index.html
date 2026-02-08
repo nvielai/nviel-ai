@@ -1,75 +1,82 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>NVIEL OS</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NVIEL</title>
 
 <style>
-* { box-sizing: border-box; }
-body {
-  margin: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont;
-  background: radial-gradient(circle at top, #0f172a, #020617);
-  color: #e5e7eb;
-  height: 100vh;
-  overflow: hidden;
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:system-ui,-apple-system,BlinkMacSystemFont;
+  background:#020617;
+  color:white;
+  height:100vh;
+  overflow:hidden;
 }
 
-/* LOCK SCREEN */
-.lock {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  transition: opacity .5s ease;
+/* SCREENS */
+.screen{
+  position:fixed;
+  inset:0;
+  display:none;
 }
-.time {
-  font-size: 48px;
-  font-weight: 700;
+.show{display:flex}
+
+/* LOCK */
+#lock{
+  justify-content:center;
+  align-items:center;
+  flex-direction:column;
 }
-.unlock {
-  margin-top: 20px;
-  font-size: 14px;
-  opacity: 0.7;
+#time{
+  font-size:46px;
+  font-weight:700;
+}
+#unlockHint{
+  opacity:.6;
+  margin-top:8px;
+  font-size:14px;
 }
 
-/* HOME SCREEN */
-.home {
-  position: absolute;
-  inset: 0;
-  padding: 20px;
-  display: none;
-  flex-direction: column;
+/* HOME */
+#home{
+  flex-direction:column;
+  padding:20px;
 }
-.header {
-  text-align: center;
-  margin-bottom: 20px;
+#brainStatus{
+  opacity:.6;
+  font-size:13px;
+  margin-bottom:20px;
 }
-.grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14px;
+.grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:16px;
 }
-.app {
-  background: linear-gradient(145deg,#0b1020,#020617);
-  border-radius: 22px;
-  padding: 24px;
-  text-align: center;
-  font-size: 16px;
-  box-shadow: 0 25px 60px rgba(0,0,0,.6);
-  transition: transform .2s ease;
+.tile{
+  background:#0b1020;
+  border-radius:20px;
+  padding:26px;
+  text-align:center;
+  font-size:16px;
 }
-.app:active {
-  transform: scale(0.95);
+.tile:active{transform:scale(.96)}
+
+/* OUTCOME */
+#outcome{
+  justify-content:center;
+  align-items:center;
+  flex-direction:column;
+  background:#000;
 }
-.footer {
-  margin-top: auto;
-  text-align: center;
-  font-size: 12px;
-  opacity: 0.6;
+button{
+  margin-top:24px;
+  padding:14px 26px;
+  border-radius:14px;
+  border:none;
+  font-weight:700;
 }
 </style>
 </head>
@@ -77,172 +84,93 @@ body {
 <body>
 
 <!-- LOCK SCREEN -->
-<div class="lock" id="lock">
-  <div class="time" id="time"></div>
-  <div class="unlock">Tap anywhere to unlock</div>
+<div id="lock" class="screen show">
+  <div id="time"></div>
+  <div id="unlockHint">Tap anywhere to unlock</div>
 </div>
 
 <!-- HOME SCREEN -->
-<div class="home" id="home">
-  <div class="header">
-    <h2>NVIEL</h2>
-    <div style="font-size:13px;opacity:.6">
-      Outcome-based OS
-    </div>
-  </div>
+<div id="home" class="screen">
+  <h2>NVIEL</h2>
+  <div id="brainStatus">Brain idle. Observing…</div>
 
   <div class="grid">
-    <div class="app" onclick="openApp('Call')">📞 Call</div>
-    <div class="app" onclick="openApp('Travel')">✈️ Travel</div>
-    <div class="app" onclick="openApp('Finance')">💸 Finance</div>
-    <div class="app" onclick="openApp('Focus')">🎯 Focus</div>
-  </div>
-
-  <div class="footer">
-    Built with vision, not money
+    <div class="tile" onclick="runOutcome('Call')">📞 Call</div>
+    <div class="tile" onclick="runOutcome('Travel')">✈️ Travel</div>
+    <div class="tile" onclick="runOutcome('Finance')">💸 Finance</div>
+    <div class="tile" onclick="runOutcome('Focus')">🎯 Focus</div>
   </div>
 </div>
 
-<script>
-const lock = document.getElementById("lock");
-const home = document.getElementById("home");
-const timeEl = document.getElementById("time");
+<!-- OUTCOME SCREEN -->
+<div id="outcome" class="screen"></div>
 
+<script>
+/* ===== TIME ===== */
+const timeEl = document.getElementById("time");
 function updateTime(){
-  timeEl.innerText = new Date().toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit'
+  timeEl.innerText = new Date().toLocaleTimeString([],{
+    hour:'2-digit',
+    minute:'2-digit'
   });
 }
-setInterval(updateTime, 1000);
 updateTime();
+setInterval(updateTime,1000);
 
-lock.onclick = () => {
-  lock.style.opacity = 0;
-  setTimeout(() => {
-    lock.style.display = "none";
-    home.style.display = "flex";
-  }, 500);
+/* ===== SCREENS ===== */
+const lock=document.getElementById("lock");
+const home=document.getElementById("home");
+const out=document.getElementById("outcome");
+
+/* ===== LIVE BRAIN (RULE BASED) ===== */
+const brain={
+  last:null,
+  usage:{Call:0,Travel:0,Finance:0,Focus:0}
 };
 
-function activateCallOutcome() {
-  const call = document.createElement("div");
-  call.style.position = "fixed";
-  call.style.inset = "0";
-  call.style.background =
-    "radial-gradient(circle at top, #020617, #000)";
-  call.style.color = "white";
-  call.style.display = "flex";
-  call.style.flexDirection = "column";
-  call.style.alignItems = "center";
-  call.style.justifyContent = "center";
-  call.style.zIndex = "9999";
+/* ===== UNLOCK ===== */
+lock.onclick=function(){
+  lock.style.display="none";
+  home.classList.add("show");
+};
 
-  call.innerHTML = `
-    <div style="font-size:14px;color:#94a3b8">Incoming Call</div>
-    <div style="font-size:34px;font-weight:700;margin-top:6px">
-      Unknown Caller
-    </div>
-    <div style="margin-top:10px;color:#64748b">Ringing…</div>
+/* ===== OUTCOME ENGINE ===== */
+function runOutcome(name){
+  brain.last=name;
+  brain.usage[name]++;
 
-    <div style="display:flex;gap:30px;margin-top:40px">
-      <button onclick="endCall()" style="
-        width:70px;height:70px;border-radius:50%;
-        border:none;font-size:22px;
-        background:#dc2626;color:white">✕</button>
+  home.classList.remove("show");
+  out.classList.add("show");
 
-      <button onclick="acceptCall()" style="
-        width:70px;height:70px;border-radius:50%;
-        border:none;font-size:22px;
-        background:#16a34a;color:white">✓</button>
-    </div>
-  `;
-
-  document.body.appendChild(call);
-
-  window.endCall = () => call.remove();
-
-  window.acceptCall = () => {
-    call.innerHTML = `
-      <div style="font-size:28px;font-weight:700">
-        Call Connected
-      </div>
-      <div style="margin-top:8px;color:#94a3b8">
-        Secure voice channel active
-      </div>
-      <button onclick="endCall()" style="
-        margin-top:40px;
-        padding:14px 26px;
-        border-radius:14px;
-        border:none;font-weight:700;
-        background:#dc2626;color:white">
-        End Call
-      </button>
-    `;
-  };
+  out.innerHTML=
+    "<div style='font-size:28px;font-weight:700'>"+name+" Outcome</div>"+
+    "<div style='opacity:.6;margin-top:6px'>"+
+    think()+"</div>"+
+    "<button onclick='back()'>Back</button>";
 }
 
-  const call = document.createElement("div");
-  call.style.position = "fixed";
-  call.style.inset = "0";
-  call.style.background =
-    "radial-gradient(circle at top,#020617,#000)";
-  call.style.color = "white";
-  call.style.display = "flex";
-  call.style.flexDirection = "column";
-  call.style.alignItems = "center";
-  call.style.justifyContent = "center";
-  call.style.zIndex = "999";
+function back(){
+  out.classList.remove("show");
+  home.classList.add("show");
+}
 
-  call.innerHTML = `
-    <div style="font-size:14px;color:#94a3b8">Incoming Call</div>
-    <div style="font-size:34px;font-weight:700;margin-top:6px">
-      Unknown Caller
-    </div>
-    <div style="margin-top:10px;color:#64748b">
-      Ringing…
-    </div>
+/* ===== BRAIN THINKING ===== */
+function think(){
+  if(brain.last==="Call") return "Brain: Preparing communication context…";
+  if(brain.last==="Focus") return "Brain: Reducing distractions…";
+  if(brain.usage.Call>=3) return "Brain: You often call at this time.";
+  return "Brain: Optimizing outcome experience…";
+}
 
-    <div style="display:flex;gap:30px;margin-top:40px">
-      <button onclick="endCall()" style="
-        width:70px;height:70px;border-radius:50%;
-        border:none;font-size:20px;
-        background:#dc2626;color:white">
-        ✖
-      </button>
-
-      <button onclick="acceptCall()" style="
-        width:70px;height:70px;border-radius:50%;
-        border:none;font-size:20px;
-        background:#16a34a;color:white">
-        ✔
-      </button>
-    </div>
-  `;
-
-  document.body.appendChild(call);
-
-  window.endCall = () => call.remove();
-
-  window.acceptCall = () => {
-    call.innerHTML = `
-      <div style="font-size:28px;font-weight:700">
-        Call Connected
-      </div>
-      <div style="margin-top:8px;color:#94a3b8">
-        Secure voice channel active
-      </div>
-      <button onclick="endCall()" style="
-        margin-top:40px;
-        padding:14px 26px;
-        border-radius:14px;
-        border:none;font-weight:700;
-        background:#dc2626;color:white">
-        End Call
-      </button>
-    `;
-  };
+/* ===== BRAIN STATUS ===== */
+setInterval(function(){
+  const el=document.getElementById("brainStatus");
+  if(brain.last){
+    el.innerText="Brain active • Last outcome: "+brain.last;
+  }else{
+    el.innerText="Brain idle. Observing…";
   }
+},1500);
 </script>
 
 </body>
