@@ -2,226 +2,132 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>NVIEL OS</title>
 
 <style>
-*{box-sizing:border-box}
-body{
-margin:0;
-height:100vh;
-font-family:system-ui;
-background:radial-gradient(circle at top,#0f172a,#020617);
-color:#e5e7eb;
-overflow:hidden;
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont;
+  background: radial-gradient(circle at top, #0f172a, #020617);
+  color: #e5e7eb;
+  height: 100vh;
+  overflow: hidden;
 }
 
-/* SCREENS */
-.screen{
-position:absolute;
-inset:0;
-display:flex;
-flex-direction:column;
-align-items:center;
-justify-content:center;
-opacity:0;
-transform:translateY(20px);
-transition:.4s ease;
+/* LOCK SCREEN */
+.lock {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: opacity .5s ease;
 }
-.screen.show{
-opacity:1;
-transform:none;
+.time {
+  font-size: 48px;
+  font-weight: 700;
 }
-
-/* LOCK */
-.lock-time{
-font-size:48px;
-font-weight:700;
-}
-.lock-sub{
-font-size:14px;
-color:#94a3b8;
-margin-top:8px;
+.unlock {
+  margin-top: 20px;
+  font-size: 14px;
+  opacity: 0.7;
 }
 
-/* HOME */
-.home{
-padding:20px;
-justify-content:flex-start;
+/* HOME SCREEN */
+.home {
+  position: absolute;
+  inset: 0;
+  padding: 20px;
+  display: none;
+  flex-direction: column;
 }
-.top{
-text-align:center;
-margin-bottom:20px;
+.header {
+  text-align: center;
+  margin-bottom: 20px;
 }
-.grid{
-display:grid;
-grid-template-columns:repeat(2,1fr);
-gap:16px;
-width:100%;
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
 }
-.app{
-background:linear-gradient(145deg,#0b1020,#020617);
-border-radius:22px;
-padding:22px;
-text-align:center;
-font-size:16px;
-box-shadow:0 25px 60px rgba(0,0,0,.7);
-transition:.2s;
+.app {
+  background: linear-gradient(145deg,#0b1020,#020617);
+  border-radius: 22px;
+  padding: 24px;
+  text-align: center;
+  font-size: 16px;
+  box-shadow: 0 25px 60px rgba(0,0,0,.6);
+  transition: transform .2s ease;
 }
-.app:active{transform:scale(.95)}
-
-.ai-bar{
-margin-top:20px;
-width:100%;
+.app:active {
+  transform: scale(0.95);
 }
-input{
-width:100%;
-padding:14px;
-border-radius:14px;
-border:none;
-background:#020617;
-color:#fff;
-font-size:15px;
-}
-button{
-margin-top:10px;
-width:100%;
-padding:14px;
-border-radius:14px;
-border:none;
-font-weight:700;
-background:linear-gradient(90deg,#6366f1,#22d3ee);
-color:#020617;
-}
-
-/* OUTCOME */
-.outcome{
-font-size:26px;
-font-weight:700;
-text-align:center;
-}
-
-/* SYSTEM */
-.system{
-padding:20px;
-font-size:14px;
-}
-pre{
-width:100%;
-background:#020617;
-padding:14px;
-border-radius:14px;
-}
-
-/* FOOTER */
-.footer{
-margin-top:auto;
-font-size:12px;
-color:#94a3b8;
-text-align:center;
+.footer {
+  margin-top: auto;
+  text-align: center;
+  font-size: 12px;
+  opacity: 0.6;
 }
 </style>
 </head>
 
 <body>
 
-<!-- LOCK -->
-<div class="screen lock show">
-  <div id="time" style="font-size:44px;font-weight:700"></div>
-
-  <button onclick="unlock()" style="
-    margin-top:20px;
-    padding:14px 24px;
-    border-radius:16px;
-    border:none;
-    font-size:16px;
-    font-weight:700;
-    background:linear-gradient(90deg,#6366f1,#22d3ee);
-  ">
-    Unlock NVIEL
-  </button>
+<!-- LOCK SCREEN -->
+<div class="lock" id="lock">
+  <div class="time" id="time"></div>
+  <div class="unlock">Tap anywhere to unlock</div>
 </div>
 
-<!-- HOME -->
-<div class="screen home">
-  <div class="top">
+<!-- HOME SCREEN -->
+<div class="home" id="home">
+  <div class="header">
     <h2>NVIEL</h2>
-    <div style="font-size:13px;color:#94a3b8">
-      Outcome-based OS prototype
+    <div style="font-size:13px;opacity:.6">
+      Outcome-based OS
     </div>
   </div>
 
   <div class="grid">
-    <div class="app" onclick="out('📞 Calling')">📞 Phone</div>
-    <div class="app" onclick="out('✈️ Planning journey')">✈️ Travel</div>
-    <div class="app" onclick="out('💸 Managing finance')">💸 Finance</div>
-    <div class="app" onclick="out('🎯 Focus mode')">🎯 Focus</div>
+    <div class="app" onclick="openApp('Call')">📞 Call</div>
+    <div class="app" onclick="openApp('Travel')">✈️ Travel</div>
+    <div class="app" onclick="openApp('Finance')">💸 Finance</div>
+    <div class="app" onclick="openApp('Focus')">🎯 Focus</div>
   </div>
 
-  <div class="ai-bar">
-    <input id="q" placeholder="Tell NVIEL what you want…" />
-    <button onclick="ai()">Ask NVIEL</button>
-    <button onclick="go('system')">⚙ System</button>
+  <div class="footer">
+    Built with vision, not money
   </div>
-
-  <div class="footer" id="hint">
-    NVIEL predicts outcomes, not actions.
-  </div>
-</div>
-
-<!-- OUTCOME -->
-<div class="screen outcome" id="out"></div>
-
-<!-- SYSTEM -->
-<div class="screen system">
-  <h3>System Status</h3>
-  <pre>
-OS: NVIEL v0.1
-Mode: Prototype
-AI: Simulated
-Latency: Ultra-low
-Build: Vision-first
-  </pre>
-  <button onclick="go('home')">⬅ Back</button>
 </div>
 
 <script>
-const screens={
-lock:document.querySelector('.lock'),
-home:document.querySelector('.home'),
-system:document.querySelector('.system'),
-outcome:document.getElementById('out')
+const lock = document.getElementById("lock");
+const home = document.getElementById("home");
+const timeEl = document.getElementById("time");
+
+function updateTime(){
+  timeEl.innerText = new Date().toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+setInterval(updateTime, 1000);
+updateTime();
+
+lock.onclick = () => {
+  lock.style.opacity = 0;
+  setTimeout(() => {
+    lock.style.display = "none";
+    home.style.display = "flex";
+  }, 500);
 };
 
-function go(s){
-Object.values(screens).forEach(x=>x.classList.remove('show'));
-screens[s].classList.add('show');
+function openApp(name){
+  alert(name + " outcome activated 🚀");
 }
-function unlock(){
-  go("home");
-}
-function out(text){
-screens.outcome.innerHTML=`
-<div>${text}</div>
-<div style="font-size:14px;color:#94a3b8;margin-top:10px">
-Optimizing outcome…
-</div>
-<button onclick="go('home')">Done</button>`;
-go('outcome');
-}
-
-function ai(){
-const q=document.getElementById('q').value.toLowerCase();
-if(q.includes('call')) out('📞 Calling');
-else if(q.includes('travel')) out('✈️ Planning journey');
-else if(q.includes('money')||q.includes('pay')) out('💸 Managing finance');
-else out('🎯 Optimizing focus');
-}
-
-setInterval(()=>{
-document.getElementById('time').innerText=
-new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
-},1000);
 </script>
 
 </body>
